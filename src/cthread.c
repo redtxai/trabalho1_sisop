@@ -8,10 +8,14 @@
 #define ERROR_CODE -1
 #define SUCCESS_CODE 0
 
+#define TRUE_CODE 1
+#define FALSE_CODE 0
+
 FILA2 ready;
 FILA2 blocked;
 FILA2 ready_suspended;
 FILA2 blocked_suspended;
+TCB_t *running_thread = NULL;  // Executando
 
 /*
  * init: Inicializa as variáveis globais compartilhadas pelas funções da biblioteca
@@ -70,7 +74,7 @@ int currentThreadId = 0;
 
 int generateThreadId()
 {
-	return ++currentThreadId;
+    return ++currentThreadId;
 }
 
 /*
@@ -90,17 +94,17 @@ int generateThreadId()
  */
 int cidentify (char *name, int size)
 {
-	char *team = 
-		"Gabriel Tiburski Júnior - 00229713\n
-		Txai - XXXXXXXX\n
-		Vinicius - XXXXXXXX";
+    char *team = 
+        "Gabriel Tiburski Júnior - 00229713\n
+        Txai Mostardeiro Potier - 00252858\n
+        Vinicius - XXXXXXXX";
 
-	if(strncpy(name, team, size) == 0) {
-		return SUCCESS_CODE;
-	}
-	else {
-		return ERROR_CODE;
-	}
+    if(strncpy(name, team, size) == 0) {
+        return SUCCESS_CODE;
+    }
+    else {
+        return ERROR_CODE;
+    }
 }
 
 /*
@@ -145,4 +149,184 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
     ready_push(newThread);
 
     return newThread->tid;
+}
+
+int cresume(int tid) {
+    int returncode = ERROR_CODE
+    if (running_thread != NULL && running_thread->tid != tid) {
+        if (checkisblockedsuspended(tid)) {
+            TCB_t *value = (TCB_t *) getthreadfromblockedsuspended(tid);
+            addthreadinblockedsuspended(value);
+            removethreadinblockedsuspended(value);
+            returncode = SUCCESS_CODE;
+        }
+        if (checkisreadysuspended(tid)) {
+            TCB_t *value = (TCB_t *) getthreadfromreadysuspended(tid);
+            addthreadinreadysuspended(value);
+            removethreadinreadysuspended(value);
+            returncode = SUCCESS_CODE;
+        }
+    }
+    return returncode;
+}
+
+int csuspend(int tid) {
+    int returncode = ERROR_CODE
+    if (running_thread != NULL && running_thread->tid != tid) {
+        if (checkisblocked(tid)) {
+            TCB_t *value = (TCB_t *) getthreadfromblocked(tid);
+            addthreadinblocked(value);
+            removethreadinblocked(value);
+            returncode = SUCCESS_CODE;
+        }
+        if (checkisready(tid)) {
+            TCB_t *value = (TCB_t *) getthreadfromready(tid);
+            addthreadinready(value);
+            removethreadinready(value);
+            returncode = SUCCESS_CODE;
+        }
+    }
+    return returncode;
+}
+
+
+/***************************************************************************
+***** Aqui começam as funções de suporte para csuspend() e cresume() *******
+***************************************************************************/
+
+
+// verifica se uma determinada thread está na fila de bloqueados
+int checkisblocked (int tid) {
+    int returncode = FALSE_CODE;
+    if (FirstFila2(blocked) == 0) {
+        do {
+            TCB_t *value = (TCB_t *)GetAtIteratorFila2(blocked);
+            if (value != NULL)
+                if (value->tid == tid) {
+                    returncode = TRUE_CODE;
+                }
+        } while (NextFila2(blocked) == 0);
+    }
+    return returncode;
+}
+
+// verifica se uma determinada thread está na fila de aptos
+int checkisready (int tid) {
+    int returncode = FALSE_CODE;
+    if (FirstFila2(ready) == 0) {
+        do {
+            TCB_t *value = (TCB_t *)GetAtIteratorFila2(ready);
+            if (value != NULL)
+                if (value->tid == tid) {
+                    returncode = TRUE_CODE;
+                }
+        } while (NextFila2(ready) == 0);
+    }
+    return returncode;
+}
+
+// verifica se uma determinada thread está na fila de aptos suspensos
+int checkisreadysuspended (int tid) {
+    int returncode = FALSE_CODE;
+    if (FirstFila2(ready_suspended) == 0) {
+        do {
+            TCB_t *value = (TCB_t *)GetAtIteratorFila2(ready_suspended);
+            if (value != NULL)
+                if (value->tid == tid) {
+                    returncode = TRUE_CODE;
+                }
+        } while (NextFila2(ready_suspended) == 0);
+    }
+    return returncode;
+}
+
+// verifica se uma determinada thread está na fila de bloqueados suspensos
+int checkisblockedsuspended (int tid) {
+    int returncode = FALSE_CODE;
+    if (FirstFila2(blocked_suspended) == 0) {
+        do {
+            TCB_t *value = (TCB_t *)GetAtIteratorFila2(blocked_suspended);
+            if (value != NULL)
+                if (value->tid == tid) {
+                    returncode = TRUE_CODE;
+                }
+        } while (NextFila2(blocked_suspended) == 0);
+    }
+    return returncode;
+}
+
+// pega uma determinada thread através de seu tid que encontra-se na fila de bloqueados
+TCB_t *getthreadfromblocked(int tid) {
+    TCB_t *value;
+    do {
+        value = (TCB_t *)GetAtIteratorFila2(blocked);
+        if (value != NULL)
+            if (value->tid == tid) {
+                break;
+            }
+    } while (NextFila2(blocked_suspended) == 0);
+    return value;
+}
+
+// pega uma determinada thread através de seu tid que encontra-se na fila de aptos
+TCB_t *getthreadfromready(int tid) {
+    TCB_t *value;
+    do {
+        value = (TCB_t *)GetAtIteratorFila2(ready);
+        if (value != NULL)
+            if (value->tid == tid) {
+                break;
+            }
+    } while (NextFila2(ready) == 0);
+    return value;
+}
+
+
+/***************************************************************************
+********* Aqui começam as funções para adição e remoção nas filas **********
+***************************************************************************/
+
+// blocked_suspended
+// adiciona uma determinada thread na fila de bloqueados suspensos
+int addthreadinblockedsuspended(TCB_t *thread) {
+    return AppendFila2(blocked_suspended, thread);
+}
+
+// remove uma determinada thread da fila de bloqueados suspensos
+int removethreadinblockedsuspended(TCB_t *thread) {
+    return DeleteAtIteratorFila2(blocked_suspended, thread);
+}
+
+// ready_suspended
+// adiciona uma determinada thread na fila de aptos suspensos
+int addthreadinreadysuspended(TCB_t *thread) {
+    return AppendFila2(ready_suspende, thread);
+}
+
+// remove uma determinada thread da fila de aptos suspensos
+int removethreadinreadysuspended(TCB_t *thread) {
+    return DeleteAtIteratorFila2(ready_suspended, thread);
+}
+
+
+// blocked
+// adiciona uma determinada thread na fila de bloqueados
+int addthreadinblocked(TCB_t *thread) {
+    return AppendFila2(blocked, thread);
+}
+
+// remove uma determinada thread da fila de bloqueados
+int removethreadinblocked(TCB_t *thread) {
+    return DeleteAtIteratorFila2(blocked, thread);
+}
+
+//ready
+// adiciona uma determinada thread na fila de aptos
+int addthreadinready(TCB_t *thread) {
+    return AppendFila2(ready, thread);
+}
+
+// remove uma determinada thread da fila de aptos
+int removethreadinready(TCB_t *thread) {
+    return DeleteAtIteratorFila2(ready, thread);
 }
