@@ -7,6 +7,7 @@
 
 #include "../include/support.h"
 #include "../include/cthread.h"
+#include "../src/cthread.c"
 #include <stdio.h>
 
 

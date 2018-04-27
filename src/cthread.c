@@ -140,12 +140,13 @@ int EnqueueThreadInFila2(TCB_t *thread, PFILA2 pFila) {
  *  Quando executada corretamente: retorna 0 (zero).
  *  Caso contrário, retorna um valor negativo.
  */
+
 int cidentify (char *name, int size)
 {
     char *team =
         "Gabriel Tiburski Júnior - 00229713\n"
         "Txai Mostardeiro Potier - 00252858\n"
-        "Vinicius - XXXXXXXX";
+        "Vinicius Roratto Carvalho - 00160094\n";
 
     if(strncpy(name, team, size) == 0) {
         return SUCCESS_CODE;
