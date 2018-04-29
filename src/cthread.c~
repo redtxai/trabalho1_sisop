@@ -478,7 +478,7 @@ int csem_init(csem_t *sem, int count)
 /*
  * cwait: Solicita um recurso. 
  * Se o recurso estiver livre, ele é atribuido a thread. 
- * Se recurso estiver ocupado, thread sendo utilizada é bloqueada e colocada na fila do semáforo.
+ *
  *
  * Parâmetros:
  *  sem: ponteiro para uma variável do tipo semáforo.
@@ -503,7 +503,7 @@ int cwait(csem_t *sem)
 		sem->count--;
 		running_thread->state = PROCST_BLOQ;
 		AppendFila2(sem->fila, running_thread);
-		swapContext(); // verificar funcionamento.
+		swapContext(); // atenção.
 		
 	}
 return SUCCESS_CODE;

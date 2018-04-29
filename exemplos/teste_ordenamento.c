@@ -15,7 +15,7 @@
 int vetor[MAX_SIZE];
 int  inc = 0;
 
-void *func(void *arg){
+void *func(void *arg)
 {
   
   int newsize = 100 * (10 - *((int *)arg));
@@ -48,24 +48,26 @@ void *func(void *arg){
 		continue;
       }
     }
-  } // fim da ordenação
+  }
+
+
+ // fim da ordenação
   
   // exibe elementos ordenados   
   printf("%d Elementos ordenados (Crescente):", newsize);
   
   for( x = 0; x < newsize; x++ )
   {
-    printf(" %d ",x,vetor[x]); // exibe o vetor ordenado
-  }  
-  
-   }
+    printf(" %d -  %d ",x,vetor[x]); // exibe o vetor ordenado
+  } 
+	
 }
 
 
 int main(int argc, char *argv[]) {
-    int i, pid[MAX_THR], size;
+    int i, pid[MAX_THR];
 
-  
+    printf("Teste");
     for (i = 0; i < MAX_THR; i++) {
         pid[i] = ccreate(&func, (void *) &i, 0); // a primeira função é a que deve levar mais tempo para terminar.
        if ( pid[i] == -1) {
@@ -78,6 +80,7 @@ int main(int argc, char *argv[]) {
          cjoin(pid[i]);
       
     printf("\nConcluida ordenacao dos vetores...\n");
+    return NULL;
     exit(0);
 }
 
