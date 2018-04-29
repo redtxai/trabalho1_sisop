@@ -163,6 +163,7 @@ int swapContext()
  */
 void onEndThread()
 {
+    //@todo provavelmente tem mais coisas pra fazer aqui
     swapContext();
 }
 
@@ -438,4 +439,68 @@ int csuspend(int tid)
     }
 
     return ERROR_CODE;
+}
+
+/*
+ * cjoin: @todo escrever sobre a função
+ *
+ * Parâmetros:
+ *  tid: identificador da thread cujo término está sendo aguardado.
+ *
+ * Retorno:
+ *  Quando executada corretamente: retorna 0 (zero)
+ *  Caso contrário, retorna um valor negativo.
+ */
+int cjoin(int tid)
+{
+    //@todo
+}
+
+/*
+ * csem_init: @todo escrever sobre a função
+ *
+ * Parâmetros:
+ *  sem: ponteiro para uma variável do tipo csem_t.
+ *  Aponta para uma estrutura de dados que representa a variável semáforo.
+ *
+ *  count: valor a ser usado na inicialização do semáforo.
+ *  Representa a quantidade de recursos controlados pelo semáforo.
+ *
+ * Retorno:
+ *  Quando executada corretamente: retorna 0 (zero)
+ *  Caso contrário, retorna um valor negativo.
+ */
+int csem_init(csem_t *sem, int count)
+{
+    //@todo
+}
+
+/*
+ * cwait: @todo escrever sobre a função
+ *
+ * Parâmetros:
+ *  sem: ponteiro para uma variável do tipo semáforo.
+ *
+ * Retorno:
+ *  Quando executada corretamente: retorna 0 (zero)
+ *  Caso contrário, retorna um valor negativo.
+ */
+int cwait(csem_t *sem)
+{
+    //@todo
+}
+
+/*
+ * csignal: @todo escrever sobre a função
+ *
+ * Parâmetros:
+ *  sem: ponteiro para uma variável do tipo semáforo.
+ *
+ * Retorno:
+ *  Quando executada corretamente: retorna 0 (zero)
+ *  Caso contrário, retorna um valor negativo.
+ */
+int csignal(csem_t *sem)
+{
+    //@todo
 }
