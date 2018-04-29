@@ -134,14 +134,6 @@ int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
 }
 
 /*
- * onEndThread: Função a ser executada quando uma thread termina (exceto main)
- */
-void onEndThread()
-{
-    swapContext();
-}
-
-/*
  * swapContext: Função que faz a troca de contexto
  *
  * Retorno:
@@ -167,6 +159,14 @@ int swapContext()
 }
 
 /*
+ * onEndThread: Função a ser executada quando uma thread termina (exceto main)
+ */
+void onEndThread()
+{
+    swapContext();
+}
+
+/*
  * initFila: Inicializa uma fila qualquer
  *
  * Parâmetros:
@@ -180,10 +180,10 @@ int initFila(FILA2 *fila)
 {
     fila = (FILA2 *) malloc(sizeof(FILA2));
 
-    if (CreateFila2(fila) != SUCCESS_CODE) {
+    if (CreateFila2(fila) != 0) {
         return ERROR_CODE;
     }
-    return SUCESS_CODE;
+    return SUCCESS_CODE;
 }
 
 /*
@@ -202,7 +202,7 @@ int initMainThread()
     mainThread->prio = 0;
 
     // Alocação de memória para a pilha da main
-    (mainThread->context).uc_stack.ss_sp = malloc(SIGSTKSZ));
+    (mainThread->context).uc_stack.ss_sp = malloc(SIGSTKSZ);
     (mainThread->context).uc_stack.ss_size = SIGSTKSZ;
 
     // Quando a thread main finaliza, o programa deve terminar. Logo,
@@ -211,8 +211,8 @@ int initMainThread()
 
     // A thread main é a primeira a ser executada, logo vai direto
     // para o estado "executando"
-    thread->state = PROCST_EXEC;
-    runningThread = thread;
+    mainThread->state = PROCST_EXEC;
+    runningThread = mainThread;
 
     return SUCCESS_CODE;
 }
