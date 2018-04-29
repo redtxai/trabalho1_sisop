@@ -11,13 +11,17 @@
 #define TRUE_CODE 1
 #define FALSE_CODE 0
 
-PFILA2 ready;
-PFILA2 blocked;
-PFILA2 ready_suspended;
-PFILA2 blocked_suspended;
-TCB_t *running_thread = NULL;  // Executando
+TCB_t *runningThread = NULL;  // Thread executando atualmente
+ucontext_t *finisherContext = NULL;  // Contexto que será carregado ao fim de uma thread
 
-int currentThreadId = 0;
+FILA2 *ready; // Fila de aptos
+FILA2 *blocked; // Fila de bloqueados
+FILA2 *readySuspended; // Fila de aptos suspensos
+FILA2 *blockedSuspended; // Fila de bloqueados suspensos
+
+int nextUniqueThreadId = 0; // Próximo ID de thread que pode ser usado na criação
+
+int isLibraryInitialized = 0;
 
 /*
  * generateThreadId: Gera um id único para uma nova thread
@@ -27,7 +31,7 @@ int currentThreadId = 0;
  */
 int generateThreadId()
 {
-    return ++currentThreadId;
+    return nextUniqueThreadId++;
 }
 
 /*
@@ -35,22 +39,23 @@ int generateThreadId()
  *
  * Parâmetros:
  *  tid: id da thread a ser buscada
- *  pFila: ponteiro para uma PFILA2 qualquer
+ *  pFila: ponteiro para uma FILA2 qualquer
  *
  * Retorno:
  *  Retorna um ponteiro para thread quando encontrá-la na fila.
  *  Quando não encontrar, retorna NULL;
  */
-TCB_t *GetThreadFromFila2(int tid, PFILA2 pFila) {
+TCB_t *GetThreadFromFila2(int tid, FILA2 *fila)
+{
     TCB_t *thread = NULL;
 
-    FirstFila2(pFila);
+    FirstFila2(fila);
 
     do {
-        thread = (TCB_t *)GetAtIteratorFila2(pFila);
+        thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tid == tid)
             return thread;
-    } while (NextFila2(pFila) == 0);
+    } while (NextFila2(fila) == 0);
 
     return NULL;
 }
@@ -60,27 +65,28 @@ TCB_t *GetThreadFromFila2(int tid, PFILA2 pFila) {
  *
  * Parâmetros:
  *  tid: id da thread a ser removida
- *  pFila: ponteiro para uma PFILA2 qualquer
+ *  pFila: ponteiro para uma FILA2 qualquer
  *
  * Retorno:
  *  Retorna SUCCESS_CODE caso tenha encontrado e removido a thread com sucesso.
  *  Caso contrário, retorna ERROR_CODE.
  */
-int RemoveThreadFromFila2(int tid, PFILA2 pFila) {
+int RemoveThreadFromFila2(int tid, FILA2 *fila)
+{
     TCB_t *thread = NULL;
 
-    if(FirstFila2(pFila) != 0)
+    if(FirstFila2(fila) != 0)
         return ERROR_CODE;
 
     do {
-        thread = (TCB_t *)GetAtIteratorFila2(pFila);
+        thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tid == tid) {
-            if(DeleteAtIteratorFila2(pFila) == 0)
+            if(DeleteAtIteratorFila2(fila) == 0)
                 return SUCCESS_CODE;
             else
                 return ERROR_CODE;
         }
-    } while(NextFila2(pFila) == 0);
+    } while(NextFila2(fila) == 0);
 
     return ERROR_CODE;
 }
@@ -90,18 +96,19 @@ int RemoveThreadFromFila2(int tid, PFILA2 pFila) {
  * seu valor.
  *
  * Parâmetros:
- *  pFila: ponteiro para uma PFILA2 qualquer
+ *  pFila: ponteiro para uma FILA2 qualquer
  *
  * Retorno:
  *  Retorna um ponteiro para thread quando executada corretamente.
  *  Caso a fila esteja vazia ou com erro retorna NULL (@todo verificar quando der erros)
  */
-TCB_t *DequeueThreadInFila2(PFILA2 pFila) {
+TCB_t *DequeueThreadInFila2(FILA2 *fila)
+{
     TCB_t *thread = NULL;
 
-    FirstFila2(pFila);
-    thread = (TCB_t *)GetAtIteratorFila2(pFila);
-    DeleteAtIteratorFila2(pFila);
+    FirstFila2(fila);
+    thread = (TCB_t *)GetAtIteratorFila2(fila);
+    DeleteAtIteratorFila2(fila);
 
     return thread;
 }
@@ -112,17 +119,165 @@ TCB_t *DequeueThreadInFila2(PFILA2 pFila) {
  * Parâmetros:
  *  thread: ponteiro para uma thread qualquer
  *
- *  pFila: ponteiro para uma PFILA2 qualquer
+ *  pFila: ponteiro para uma FILA2 qualquer
  *
  * Retorno:
  *  Retorna SUCCESS_CODE quando executada corretamente.
  *  Caso contrário, retorna ERROR_CODE.
  */
-int EnqueueThreadInFila2(TCB_t *thread, PFILA2 pFila) {
-    if(AppendFila2(pFila, thread) == 0)
+int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
+{
+    if(AppendFila2(fila, thread) == 0)
         return SUCCESS_CODE;
     else
         return ERROR_CODE;
+}
+
+/*
+ * onEndThread: Função a ser executada quando uma thread termina (exceto main)
+ */
+void onEndThread()
+{
+    swapContext();
+}
+
+/*
+ * swapContext: Função que faz a troca de contexto
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int swapContext()
+{
+    if (runningThread != NULL) {
+        getcontext(&(runningThread->context));
+    }
+
+    runningThread = DequeueThreadInFila2(ready);
+
+    if (runningThread == NULL) {
+        return ERROR_CODE;
+    }
+
+    runningThread->state = PROCST_EXEC;
+    setcontext(&(runningThread->context));
+
+    return SUCCESS_CODE;
+}
+
+/*
+ * initFila: Inicializa uma fila qualquer
+ *
+ * Parâmetros:
+ *  fila: ponteiro para uma FILA2 qualquer
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int initFila(FILA2 *fila)
+{
+    fila = (FILA2 *) malloc(sizeof(FILA2));
+
+    if (CreateFila2(fila) != SUCCESS_CODE) {
+        return ERROR_CODE;
+    }
+    return SUCESS_CODE;
+}
+
+/*
+ * initMainThread: Inicializa a thread principal (main) e a coloca no estado
+ * "executando"
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int initMainThread()
+{
+    TCB_t *mainThread = (TCB_t *) malloc(sizeof(TCB_t));
+
+    mainThread->tid = generateThreadId();
+    mainThread->prio = 0;
+
+    // Alocação de memória para a pilha da main
+    (mainThread->context).uc_stack.ss_sp = malloc(SIGSTKSZ));
+    (mainThread->context).uc_stack.ss_size = SIGSTKSZ;
+
+    // Quando a thread main finaliza, o programa deve terminar. Logo,
+    // não deve ser atribuído um callback
+    (mainThread->context).uc_link = NULL;
+
+    // A thread main é a primeira a ser executada, logo vai direto
+    // para o estado "executando"
+    thread->state = PROCST_EXEC;
+    runningThread = thread;
+
+    return SUCCESS_CODE;
+}
+
+/*
+ * initFinisherContext: Inicializa o contexto que será executado ao
+ * fim das threads
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int initFinisherContext()
+{
+    finisherContext = (ucontext_t *) malloc(sizeof(ucontext_t));
+
+    // Inicialização de contexto ocorreu corretamente?
+    if(getcontext(finisherContext) != 0) {
+        return ERROR_CODE;
+    }
+
+    // Alocação de memória para a pilha da main
+    finisherContext->uc_stack.ss_sp = malloc(SIGSTKSZ);
+    finisherContext->uc_stack.ss_size = SIGSTKSZ;
+
+    // Nada a fazer quando acabar
+    finisherContext->uc_link = NULL;
+
+    makecontext(finisherContext, onEndThread, 0);
+
+    return SUCCESS_CODE;
+}
+
+/*
+ * init: Inicializa todas as variáveis da biblioteca.
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int init()
+{
+    if (!isLibraryInitialized) {
+
+        int initFilaReturns = initFila(ready);
+        initFilaReturns += initFila(blocked);
+        initFilaReturns += initFila(readySuspended);
+        initFilaReturns += initFila(blockedSuspended);
+
+        if (initFilaReturns != SUCCESS_CODE*4) {
+            return ERROR_CODE;
+        }
+
+        if (initMainThread() != SUCCESS_CODE) {
+            return ERROR_CODE;
+        }
+
+        if (initFinisherContext() != SUCCESS_CODE) {
+            return ERROR_CODE;
+        }
+
+        isLibraryInitialized = TRUE_CODE;
+    }
+
+    return SUCCESS_CODE;
 }
 
 /*
@@ -175,20 +330,17 @@ int cidentify (char *name, int size)
  */
 int ccreate(void *(*start)(void *), void *arg, int prio)
 {
-    return 0;
-    //@todo ESTA FUNÇAO AINDA NAO ESTA FUNCIONANDO
-    /*
-    //init();
+    init();
 
     TCB_t *newThread = (TCB_t *)malloc(sizeof(TCB_t));
 
     newThread->tid = generateThreadId();
-    newThread->state = PROCST_CRIACAO;
+    newThread->state = PROCST_APTO;
     newThread->prio = 0;
 
     getcontext(&(newThread->context));
 
-    //newThread->context.uc_link = ending_ctx; //What to do when finished
+    newThread->context.uc_link = finisherContext;
     newThread->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
     newThread->context.uc_stack.ss_size = SIGSTKSZ;
 
@@ -198,10 +350,26 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 
     makecontext(&(newThread->context), (void (*)(void))start, 1, arg);
 
-    //ready_push(newThread);
+    EnqueueThreadInFila2(newThread, ready);
 
     return newThread->tid;
-    */
+}
+
+/*
+ * cyield: A thread atual libera voluntariamente a CPU (retorna ao estado apto)
+ *
+ * Retorno:
+ *  Quando executada corretamente: retorna 0 (zero)
+ *  Caso contrário, retorna um valor negativo.
+ */
+int cyield(void)
+{
+    init();
+
+    runningThread->state = PROCST_APTO;
+    EnqueueThreadInFila2(runningThread, ready);
+
+    return swapContext();
 }
 
 /*
@@ -215,19 +383,22 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
  *  Quando executada corretamente: retorna 0 (zero)
  *  Caso contrário, retorna um valor negativo.
  */
-int cresume(int tid) {
+int cresume(int tid)
+{
+    init();
+
     TCB_t *thread = NULL;
 
-    thread = GetThreadFromFila2(tid, blocked_suspended);
+    thread = GetThreadFromFila2(tid, blockedSuspended);
     if(thread != NULL) {
-        RemoveThreadFromFila2(tid, blocked_suspended);
+        RemoveThreadFromFila2(tid, blockedSuspended);
         EnqueueThreadInFila2(thread, blocked);
         return SUCCESS_CODE;
     }
 
-    thread = GetThreadFromFila2(tid, ready_suspended);
+    thread = GetThreadFromFila2(tid, readySuspended);
     if(thread != NULL) {
-        RemoveThreadFromFila2(tid, ready_suspended);
+        RemoveThreadFromFila2(tid, readySuspended);
         EnqueueThreadInFila2(thread, ready);
         return SUCCESS_CODE;
     }
@@ -246,20 +417,23 @@ int cresume(int tid) {
  *  Quando executada corretamente: retorna 0 (zero)
  *  Caso contrário, retorna um valor negativo.
  */
-int csuspend(int tid) {
+int csuspend(int tid)
+{
+    init();
+
     TCB_t *thread = NULL;
 
     thread = GetThreadFromFila2(tid, blocked);
     if(thread != NULL) {
         RemoveThreadFromFila2(tid, blocked);
-        EnqueueThreadInFila2(thread, blocked_suspended);
+        EnqueueThreadInFila2(thread, blockedSuspended);
         return SUCCESS_CODE;
     }
 
     thread = GetThreadFromFila2(tid, ready);
     if(thread != NULL) {
         RemoveThreadFromFila2(tid, ready);
-        EnqueueThreadInFila2(thread, ready_suspended);
+        EnqueueThreadInFila2(thread, readySuspended);
         return SUCCESS_CODE;
     }
 
