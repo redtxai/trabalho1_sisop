@@ -134,6 +134,37 @@ int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
 }
 
 /*
+ * makeReady: Troca o estado de uma thread para Ready/ReadSuspended
+ *
+ * Parâmetros:
+ *  thread: ponteiro para uma thread qualquer
+ *
+ *  pFila: ponteiro para uma FILA2 qualquer
+ *
+ * Retorno:
+ *  Retorna SUCCESS_CODE quando executada corretamente.
+ *  Caso contrário, retorna ERROR_CODE.
+ */
+int makeReady(int tid) {
+    thread = GetThreadFromFila2(tid, blockedSuspended);
+    if(thread != NULL) {
+        RemoveThreadFromFila2(tid, blockedSuspended);
+        thread->state = PROCST_APTO_SUS;
+        EnqueueThreadInFila2(thread, readySuspended);
+        return SUCCESS_CODE;
+    }
+
+    thread = GetThreadFromFila2(tid, blocked);
+    if(thread != NULL) {
+        RemoveThreadFromFila2(tid, blocked);
+        thread->state = PROCST_APTO;
+        EnqueueThreadInFila2(thread, ready);
+        return SUCCESS_CODE;
+    }
+}
+
+
+/*
  * swapContext: Função que faz a troca de contexto
  *
  * Retorno:
@@ -472,7 +503,15 @@ int cjoin(int tid)
  */
 int csem_init(csem_t *sem, int count)
 {
-    //@todo
+    sem = (csem_t *)malloc(sizeof(csem_t));
+    sem->fila = (PFILA2)malloc(sizeof(FILA2));
+    sem->count = count;
+
+    CreateFila2(sem->fila);
+
+    if (sem->fila)
+        return SUCESSO;
+    return ERRO; //caso fila nao tenha sido alocada corretamente
 }
 
 /*
@@ -489,23 +528,23 @@ int csem_init(csem_t *sem, int count)
  */
 int cwait(csem_t *sem)
 {
-	init();
-	// Semáforo nulo ou fila não inicializada retornam erro.
-	if ((sem= NULL) || (sem->fila == NULL))
-		return ERROR_CODE;
-	// Recurso disponível é passado para a thread.
-	if (sem-> count > 0) {
-		sem->count--;
-		return SUCCESS_CODE;
-	}
-	// recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo. 
-	else {	
-		sem->count--;
-		running_thread->state = PROCST_BLOQ;
-		AppendFila2(sem->fila, running_thread);
-		swapContext(); // verificar funcionamento.
-		
-	}
+    init();
+    // Semáforo nulo ou fila não inicializada retornam erro.
+    if ((sem= NULL) || (sem->fila == NULL))
+        return ERROR_CODE;
+    // Recurso disponível é passado para a thread.
+    if (sem-> count > 0) {
+        sem->count--;
+        return SUCCESS_CODE;
+    }
+    // recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo. 
+    else {    
+        sem->count--;
+        running_thread->state = PROCST_BLOQ;
+        AppendFila2(sem->fila, running_thread);
+        swapContext(); // verificar funcionamento.
+        
+    }
 return SUCCESS_CODE;
 
 
@@ -523,5 +562,21 @@ return SUCCESS_CODE;
  */
 int csignal(csem_t *sem)
 {
-    //@todo
+    init();
+    // Semáforo nulo ou fila não inicializada retornam erro.
+    if ((sem= NULL) || (sem->fila == NULL))
+        return ERROR_CODE;
+
+    sem->count++;
+    // Fila vazia
+    if(FirstFila2(sem->fila) != 0)
+        return SUCCESS_CODE;
+
+    TCB_t *thread = DequeueThreadInFila2(sem->fila)
+
+    if (thread == NULL) {
+        return ERROR_CODE;
+    }
+
+    return makeReady(thread->tid);
 }
