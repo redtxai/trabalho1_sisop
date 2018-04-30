@@ -146,6 +146,7 @@ int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
  *  Caso contrário, retorna ERROR_CODE.
  */
 int makeReady(int tid) {
+    TCB_t *thread = NULL;
     thread = GetThreadFromFila2(tid, blockedSuspended);
     if(thread != NULL) {
         RemoveThreadFromFila2(tid, blockedSuspended);
@@ -510,13 +511,13 @@ int csem_init(csem_t *sem, int count)
     CreateFila2(sem->fila);
 
     if (sem->fila)
-        return SUCESSO;
-    return ERRO; //caso fila nao tenha sido alocada corretamente
+        return SUCCESS_CODE;
+    return ERROR_CODE; //caso fila nao tenha sido alocada corretamente
 }
 
 /*
- * cwait: Solicita um recurso. 
- * Se o recurso estiver livre, ele é atribuido a thread. 
+ * cwait: Solicita um recurso.
+ * Se o recurso estiver livre, ele é atribuido a thread.
  * Se recurso estiver ocupado, thread sendo utilizada é bloqueada e colocada na fila do semáforo.
  *
  * Parâmetros:
@@ -537,13 +538,13 @@ int cwait(csem_t *sem)
         sem->count--;
         return SUCCESS_CODE;
     }
-    // recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo. 
-    else {    
+    // recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo.
+    else {
         sem->count--;
-        running_thread->state = PROCST_BLOQ;
-        AppendFila2(sem->fila, running_thread);
+        runningThread->state = PROCST_BLOQ;
+        AppendFila2(sem->fila, runningThread);
         swapContext(); // verificar funcionamento.
-        
+
     }
 return SUCCESS_CODE;
 
@@ -572,7 +573,7 @@ int csignal(csem_t *sem)
     if(FirstFila2(sem->fila) != 0)
         return SUCCESS_CODE;
 
-    TCB_t *thread = DequeueThreadInFila2(sem->fila)
+    TCB_t *thread = DequeueThreadInFila2(sem->fila);
 
     if (thread == NULL) {
         return ERROR_CODE;
