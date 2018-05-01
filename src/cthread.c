@@ -218,19 +218,19 @@ int EnqueueThreadInFila2(TCB_t *thread, FILA2 **fila)
  */
 int makeReady(int tid) {
     TCB_t *thread = NULL;
-    thread = GetThreadFromFila2(tid, blockedSuspended);
+    thread = GetThreadFromFila2(tid, &blockedSuspended);
     if(thread != NULL) {
-        RemoveThreadFromFila2(tid, blockedSuspended);
+        RemoveThreadFromFila2(tid, &blockedSuspended);
         thread->state = PROCST_APTO_SUS;
-        EnqueueThreadInFila2(thread, readySuspended);
+        EnqueueThreadInFila2(thread, &readySuspended);
         return SUCCESS_CODE;
     }
 
-    thread = GetThreadFromFila2(tid, blocked);
+    thread = GetThreadFromFila2(tid, &blocked);
     if(thread != NULL) {
-        RemoveThreadFromFila2(tid, blocked);
+        RemoveThreadFromFila2(tid, &blocked);
         thread->state = PROCST_APTO;
-        EnqueueThreadInFila2(thread, ready);
+        EnqueueThreadInFila2(thread, &ready);
         return SUCCESS_CODE;
     }
 
@@ -253,10 +253,10 @@ int swapContext(int nextState)
     if (runningThread != NULL) {
         switch(nextState) {
             case PROCST_BLOQ:
-                EnqueueThreadInFila2(runningThread, blocked);
+                EnqueueThreadInFila2(runningThread, &blocked);
                 break;
             case PROCST_APTO:
-                EnqueueThreadInFila2(runningThread, ready);
+                EnqueueThreadInFila2(runningThread, &ready);
                 break;
             case PROCST_TERMINO:
                 break;
@@ -267,7 +267,7 @@ int swapContext(int nextState)
         getcontext(&(runningThread->context));
     }
 
-    runningThread = DequeueThreadInFila2(ready);
+    runningThread = DequeueThreadInFila2(&ready);
 
     if (runningThread == NULL) {
         return ERROR_CODE;
@@ -535,18 +535,18 @@ int cresume(int tid)
 
     TCB_t *thread = NULL;
 
-    thread = GetThreadFromFila2(tid, blockedSuspended);
+    thread = GetThreadFromFila2(tid, &blockedSuspended);
     if(thread != NULL) {
         thread->state = PROCST_BLOQ;
-        RemoveThreadFromFila2(tid, blockedSuspended);
-        EnqueueThreadInFila2(thread, blocked);
+        RemoveThreadFromFila2(tid, &blockedSuspended);
+        EnqueueThreadInFila2(thread, &blocked);
         return SUCCESS_CODE;
     }
 
-    thread = GetThreadFromFila2(tid, readySuspended);
+    thread = GetThreadFromFila2(tid, &readySuspended);
     if(thread != NULL) {
         thread->state = PROCST_APTO;
-        RemoveThreadFromFila2(tid, readySuspended);
+        RemoveThreadFromFila2(tid, &readySuspended);
         EnqueueThreadInFila2(thread, ready);
         return SUCCESS_CODE;
     }
@@ -571,19 +571,19 @@ int csuspend(int tid)
 
     TCB_t *thread = NULL;
 
-    thread = GetThreadFromFila2(tid, blocked);
+    thread = GetThreadFromFila2(tid, &blocked);
     if(thread != NULL) {
         thread->state = PROCST_BLOQ_SUS;
-        RemoveThreadFromFila2(tid, blocked);
-        EnqueueThreadInFila2(thread, blockedSuspended);
+        RemoveThreadFromFila2(tid, &blocked);
+        EnqueueThreadInFila2(thread, &blockedSuspended);
         return SUCCESS_CODE;
     }
 
-    thread = GetThreadFromFila2(tid, ready);
+    thread = GetThreadFromFila2(tid, &ready);
     if(thread != NULL) {
         thread->state = PROCST_APTO_SUS;
-        RemoveThreadFromFila2(tid, ready);
-        EnqueueThreadInFila2(thread, readySuspended);
+        RemoveThreadFromFila2(tid, &ready);
+        EnqueueThreadInFila2(thread, &readySuspended);
         return SUCCESS_CODE;
     }
 
@@ -611,14 +611,14 @@ int cjoin(int tid)
     //TCB_t *thread = NULL;
     // verifica-se se a thread existe e não está finalizada
     //thread =
-    if(GetThreadFromFila2(tid, blocked) != NULL
-        || GetThreadFromFila2(tid, blockedSuspended) != NULL
-        || GetThreadFromFila2(tid, ready) != NULL
-        || GetThreadFromFila2(tid, readySuspended) != NULL) {
+    if(GetThreadFromFila2(tid, &blocked) != NULL
+        || GetThreadFromFila2(tid, &blockedSuspended) != NULL
+        || GetThreadFromFila2(tid, &ready) != NULL
+        || GetThreadFromFila2(tid, &readySuspended) != NULL) {
 
         // verifica-se se não há nenhuma outra thread esperando por essa thread
-        if (GetThreadWaitingFromFila2(tid, blocked) == NULL
-            && GetThreadWaitingFromFila2(tid, blockedSuspended) == NULL) {
+        if (GetThreadWaitingFromFila2(tid, &blocked) == NULL
+            && GetThreadWaitingFromFila2(tid, &blockedSuspended) == NULL) {
             runningThread->tidBlocked = tid;
             return swapContext(PROCST_BLOQ);
         }
@@ -683,7 +683,7 @@ int cwait(csem_t *sem)
         sem->count--;
         //runningThread->state = PROCST_BLOQ;
         //AppendFila2(sem->fila, runningThread);
-        EnqueueThreadInFila2(runningThread, sem->fila);
+        EnqueueThreadInFila2(runningThread, &sem->fila);
         swapContext(PROCST_BLOQ); // verificar funcionamento.
 
     }
@@ -712,7 +712,7 @@ int csignal(csem_t *sem)
     if(FirstFila2(sem->fila) != 0)
         return SUCCESS_CODE;
 
-    TCB_t *thread = DequeueThreadInFila2(sem->fila);
+    TCB_t *thread = DequeueThreadInFila2(&sem->fila);
 
     if (thread == NULL) {
         return ERROR_CODE;
