@@ -174,7 +174,7 @@ TCB_t *DequeueThreadInFila2(FILA2 *fila)
 int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
 {
     PRINT(("Enqueing thread in FILA2\n"));
-    FirstFila2(fila);
+    PRINT(("%p\n",fila));
     if(AppendFila2(fila, thread) == 0) {
         PRINT(("Sucess\n"));
         return SUCCESS_CODE;
@@ -282,7 +282,10 @@ void onEndThread()
 int initFila(FILA2 *fila)
 {
     PRINT(("Initializing queues\n"));
+
+    PRINT(("%p\n",fila));
     fila = (FILA2 *) malloc(sizeof(FILA2));
+    PRINT(("%p\n",fila));
 
     if (CreateFila2(fila) == 0) {
         PRINT(("Success\n"));
@@ -475,10 +478,9 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
     PRINT(("makecontext\n"));
     makecontext(&(newThread->context), (void (*)(void))start, 1, arg);
 
-    //@todo remove the following line:
-    AppendFila2(ready, newThread);
+    EnqueueThreadInFila2(newThread, &ready);
 
-    EnqueueThreadInFila2(newThread, ready);
+    PrintFila2(&ready);
 
     return newThread->tid;
 }
