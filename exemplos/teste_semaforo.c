@@ -1,5 +1,5 @@
 /* 
- * test_semaforo.c: 
+ * test_semaforo.c: Função demorada (longo for) testa as primitivas ccreate, cwait e csignal.
  */
 
 #include	"../include/support.h"
@@ -9,17 +9,16 @@
 #include 	<time.h>
 #include 	"../src/cthread.c"
 
-// inicializar struct do semáforo.
 
 
 void *func(void *arg){
 {
 	int i = 0;
-	printf("iniciando função %d \n);
+	printf("iniciando função %d \n");
   // criar função que demora para rodar.
 	for(i=0; i < 10000; i++){
 		if(i % 10000)
-			printf("Finalizando função %d \n", *((int *)arg))
+			printf("Finalizando função %d \n", ((int *)arg));)
 	}
 		
  
@@ -30,20 +29,31 @@ int main(int argc, char *argv[]) {
 	
 	int id0, id1, id2, id3;
 	int i=0;
+
+	// inicializar struct do semáforo.
+	csem_t recurso;
 	
-	id0 = ccreate(func0, (void *)&i, 0);
+	// começar a rodar funcoes demoradas
+	id0 = ccreate(func, (void *)&i, 0);
 	i++;
-	id1 = ccreate(func0, (void *)&i, 0);
+	id1 = ccreate(func, (void *)&i, 0);
 	i++;
-	id2 = ccreate(func0, (void *)&i, 0);
+	id2 = ccreate(func, (void *)&i, 0);
 	i++;
-	id3 = ccreate(func0, (void *)&i, 0);
-	
+	id3 = ccreate(func, (void *)&i, 0);	
 	
 	
 	// incluir testes do semáforo.
-
-
-
+	csem_init(&recurso, 1);
+	
+	cwait(&recurso); // id0 pega o recurso.
+	cwait(&recurso);
+	csignal(&recurso); 
+	cwait(&recurso);
+	cwait(&recurso);
+	csignal(&recurso);
+	csignal(&recurso);
+	csignal(&recurso);
+		
 }
 

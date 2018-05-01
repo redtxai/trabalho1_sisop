@@ -49,9 +49,6 @@ int main(int argc, char *argv[]) {
 	cresume(id3); // tira id3 do estado suspenso.
 
 	
-	// incluir testes do semáforo.
-
-
 
 }
 
