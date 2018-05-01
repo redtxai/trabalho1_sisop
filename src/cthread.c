@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define PRINT(X) printf X
+
 #define ERROR_CODE -1
 #define SUCCESS_CODE 0
 
@@ -255,9 +257,11 @@ void onEndThread()
  */
 int initFila(FILA2 *fila)
 {
+    PRINT(("Initializing queues\n"));
     fila = (FILA2 *) malloc(sizeof(FILA2));
 
     if (CreateFila2(fila) != 0) {
+	PRINT(("Error\n"));
         return ERROR_CODE;
     }
     return SUCCESS_CODE;
@@ -273,6 +277,7 @@ int initFila(FILA2 *fila)
  */
 int initMainThread()
 {
+    PRINT(("Initializing main thread\n"));
     TCB_t *mainThread = (TCB_t *) malloc(sizeof(TCB_t));
 
     mainThread->tid = generateThreadId();
@@ -293,6 +298,7 @@ int initMainThread()
     mainThread->state = PROCST_EXEC;
     runningThread = mainThread;
 
+    PRINT(("Success\n"));
     return SUCCESS_CODE;
 }
 
@@ -306,10 +312,12 @@ int initMainThread()
  */
 int initFinisherContext()
 {
+    PRINT(("Initializing finisher context\n"));
     finisherContext = (ucontext_t *) malloc(sizeof(ucontext_t));
 
     // Inicialização de contexto ocorreu corretamente?
     if(getcontext(finisherContext) != 0) {
+        PRINT(("Error\n"));
         return ERROR_CODE;
     }
 
@@ -322,6 +330,7 @@ int initFinisherContext()
 
     makecontext(finisherContext, onEndThread, 0);
 
+    PRINT(("Success\n"));
     return SUCCESS_CODE;
 }
 
@@ -335,6 +344,7 @@ int initFinisherContext()
 int init()
 {
     if (!isLibraryInitialized) {
+        PRINT(("Initializing cthread\n"));
 
         int initFilaReturns = initFila(ready);
         initFilaReturns += initFila(blocked);
@@ -353,6 +363,7 @@ int init()
             return ERROR_CODE;
         }
 
+        PRINT(("Cthread initialized\n"));
         isLibraryInitialized = TRUE_CODE;
     }
 
@@ -542,9 +553,9 @@ int cjoin(int tid)
         return ERROR_CODE;
     }
 
-    TCB_t *thread = NULL;
+    //TCB_t *thread = NULL;
     // verifica-se se a thread existe e não está finalizada
-    thread = 
+    //thread =
     if(GetThreadFromFila2(tid, blocked) != NULL
         || GetThreadFromFila2(tid, blockedSuspended) != NULL
         || GetThreadFromFila2(tid, ready) != NULL
