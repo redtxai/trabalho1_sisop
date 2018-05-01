@@ -16,23 +16,41 @@ int  inc = 0;
 
 void *func(void *arg){
 {
-  // criar função que demora para rodar. 
+	int i = 0;
+	printf("iniciando função %d \n);
+  // criar função que demora para rodar.
+	for(i=0; i < 10000; i++){
+		if(i % 10000)
+			printf("Finalizando função %d \n", *((int *)arg))
+	}
+		
  
 }
 
 
 int main(int argc, char *argv[]) {
-
-	// criar três threads.
-	// Dar yieald na primeira.
-	// dar join na segunda, dependendo da tarceira.
-	// finalizar terceira, segunda e primeira.
 	
+	int id0, id1, id2, id3;
+	int i=0;
+	
+	id0 = ccreate(func0, (void *)&i, 0);
+	i++;
+	id1 = ccreate(func0, (void *)&i, 0);
+	i++;
+	id2 = ccreate(func0, (void *)&i, 0);
+	i++;
+	id3 = ccreate(func0, (void *)&i, 0);
+	
+	cyield(); // id0 cede sua vez.
 
-	// Criar fu
+	cjoin(id2); // id1 fica presa ao fim de id2.
+	
+	csuspend(id3);  // id3 entra em estado suspenso.
+	cresume(id3); // tira id3 do estado suspenso.
 
+	
+	// incluir testes do semáforo.
 
-	// como testar semáforo e outras funções?
 
 
 }

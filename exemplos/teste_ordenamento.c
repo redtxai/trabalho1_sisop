@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
        }
      }
 
-    for (i = 0; i < MAX_THR; i++) 
-         cjoin(pid[i]);
+  //  for (i = 0; i < MAX_THR; i++) 
+  //       cjoin(pid[i]);
       
     printf("\nConcluida ordenacao dos vetores...\n");
     return NULL;

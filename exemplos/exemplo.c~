@@ -36,6 +36,6 @@ int main(int argc, char *argv[]) {
 	cjoin(id1);
 
 	printf("Eu sou a main voltando para terminar o programa\n");
-	return 0;
+	return NULL;
 }
 

@@ -60,7 +60,7 @@ void *func(void *arg)
   {
     printf(" %d -  %d ",x,vetor[x]); // exibe o vetor ordenado
   } 
-	 return NULL; 
+	
 }
 
 

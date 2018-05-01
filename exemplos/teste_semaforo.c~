@@ -1,5 +1,5 @@
 /* 
- * test_ordenamento.c: recebe um inteiro, cria uma array de valores aleatorios com este inteiro e ordena através do bubble sort. O objetivo é testar inits, yelds e suspends durante a execução de funções demoradas e rápidas. A cada 100 ordenamentos a função libera intencionalmente seu recurso.
+ * test_semaforo.c: 
  */
 
 #include	"../include/support.h"
@@ -9,10 +9,8 @@
 #include 	<time.h>
 #include 	"../src/cthread.c"
 
+// incluir struct do semáforo.
 
-
-int vetor[MAX_SIZE];
-int  inc = 0;
 
 void *func(void *arg){
 {
@@ -41,13 +39,7 @@ int main(int argc, char *argv[]) {
 	i++;
 	id3 = ccreate(func0, (void *)&i, 0);
 	
-	cyield(); // id0 cede sua vez.
-
-	cjoin(id2); // id1 fica presa ao fim de id2.
 	
-	csuspend(id3);  // id3 entra em estado suspenso.
-	cresume(id3); // tira id3 do estado suspenso.
-
 	
 	// incluir testes do semáforo.
 
