@@ -162,19 +162,37 @@ int makeReady(int tid) {
         EnqueueThreadInFila2(thread, ready);
         return SUCCESS_CODE;
     }
+
+    return ERROR_CODE;
 }
 
 
 /*
  * swapContext: Função que faz a troca de contexto
  *
+ * Parâmetros:
+ *  nextState: variável que indicará qual o próximo estado da thread que será substituída
+ *
  * Retorno:
  *  Retorna SUCCESS_CODE quando executada corretamente.
  *  Caso contrário, retorna ERROR_CODE.
  */
-int swapContext()
+int swapContext(int nextState)
 {
     if (runningThread != NULL) {
+        switch(runningThread->state) {
+            case PROCST_BLOQ:
+                EnqueueThreadInFila2(runningThread, blocked);
+                break;
+            case PROCST_APTO:
+                EnqueueThreadInFila2(runningThread, ready);
+                break;
+            case PROCST_TERMINO:
+                break;
+            default:
+            return ERROR_CODE;
+        }
+        runningThread->state = nextState;
         getcontext(&(runningThread->context));
     }
 
@@ -196,7 +214,7 @@ int swapContext()
 void onEndThread()
 {
     //@todo provavelmente tem mais coisas pra fazer aqui
-    swapContext();
+    swapContext(PROCST_TERMINO);
 }
 
 /*
@@ -233,6 +251,8 @@ int initMainThread()
 
     mainThread->tid = generateThreadId();
     mainThread->prio = 0;
+
+    getcontext(&(mainThread->context));
 
     // Alocação de memória para a pilha da main
     (mainThread->context).uc_stack.ss_sp = malloc(SIGSTKSZ);
@@ -369,7 +389,7 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 
     newThread->tid = generateThreadId();
     newThread->state = PROCST_APTO;
-    newThread->prio = 0;
+    newThread->prio = prio;
 
     getcontext(&(newThread->context));
 
@@ -402,7 +422,7 @@ int cyield(void)
     runningThread->state = PROCST_APTO;
     EnqueueThreadInFila2(runningThread, ready);
 
-    return swapContext();
+    return swapContext(PROCST_APTO);
 }
 
 /*
@@ -486,6 +506,7 @@ int csuspend(int tid)
 int cjoin(int tid)
 {
     //@todo
+    return ERROR_CODE;
 }
 
 /*
@@ -504,15 +525,17 @@ int cjoin(int tid)
  */
 int csem_init(csem_t *sem, int count)
 {
-    sem = (csem_t *)malloc(sizeof(csem_t));
-    sem->fila = (PFILA2)malloc(sizeof(FILA2));
+    //init();
+
+    sem = (csem_t *) malloc(sizeof(csem_t));
+    sem->fila = (FILA2 *) malloc(sizeof(FILA2));
     sem->count = count;
 
     CreateFila2(sem->fila);
 
-    if (sem->fila)
+    if (sem->fila != 0)
         return SUCCESS_CODE;
-    return ERROR_CODE; //caso fila nao tenha sido alocada corretamente
+    return ERROR_CODE;
 }
 
 /*
@@ -531,25 +554,23 @@ int cwait(csem_t *sem)
 {
     init();
     // Semáforo nulo ou fila não inicializada retornam erro.
-    if ((sem= NULL) || (sem->fila == NULL))
+    if ((sem == NULL) || (sem->fila == NULL))
         return ERROR_CODE;
     // Recurso disponível é passado para a thread.
-    if (sem-> count > 0) {
+    if (sem->count > 0) {
         sem->count--;
-        return SUCCESS_CODE;
     }
     // recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo.
     else {
         sem->count--;
-        runningThread->state = PROCST_BLOQ;
-        AppendFila2(sem->fila, runningThread);
-        swapContext(); // verificar funcionamento.
+        //runningThread->state = PROCST_BLOQ;
+        //AppendFila2(sem->fila, runningThread);
+        EnqueueThreadInFila2(runningThread, sem->fila);
+        swapContext(PROCST_BLOQ); // verificar funcionamento.
 
     }
-return SUCCESS_CODE;
-
-
-    }
+    return SUCCESS_CODE;
+}
 
 /*
  * csignal: @todo escrever sobre a função
@@ -565,7 +586,7 @@ int csignal(csem_t *sem)
 {
     init();
     // Semáforo nulo ou fila não inicializada retornam erro.
-    if ((sem= NULL) || (sem->fila == NULL))
+    if ((sem == NULL) || (sem->fila == NULL))
         return ERROR_CODE;
 
     sem->count++;
