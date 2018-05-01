@@ -36,6 +36,9 @@ int generateThreadId()
     return nextUniqueThreadId++;
 }
 
+/*
+ * PrintFila2: Printa todas os ids de uma fila qualquer
+ */
 void PrintFila2(FILA2 *fila)
 {
     TCB_t *thread = NULL;
@@ -162,7 +165,7 @@ TCB_t *DequeueThreadInFila2(FILA2 *fila)
  * Parâmetros:
  *  thread: ponteiro para uma thread qualquer
  *
- *  pFila: ponteiro para uma FILA2 qualquer
+ *  fila: ponteiro para uma FILA2 qualquer
  *
  * Retorno:
  *  Retorna SUCCESS_CODE quando executada corretamente.
@@ -170,10 +173,16 @@ TCB_t *DequeueThreadInFila2(FILA2 *fila)
  */
 int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
 {
-    if(AppendFila2(fila, thread) == 0)
+    PRINT(("Enqueing thread in FILA2\n"));
+    FirstFila2(fila);
+    if(AppendFila2(fila, thread) == 0) {
+        PRINT(("Sucess\n"));
         return SUCCESS_CODE;
-    else
+    }
+    else {
+        PRINT(("Error"));
         return ERROR_CODE;
+    }
 }
 
 /*
@@ -275,12 +284,13 @@ int initFila(FILA2 *fila)
     PRINT(("Initializing queues\n"));
     fila = (FILA2 *) malloc(sizeof(FILA2));
 
-    if (CreateFila2(fila) != 0) {
-    PRINT(("Error\n"));
-        return ERROR_CODE;
+    if (CreateFila2(fila) == 0) {
+        PRINT(("Success\n"));
+        return SUCCESS_CODE;
+        
     }
-    PrintFila2(fila);
-    return SUCCESS_CODE;
+    PRINT(("Error\n"));
+    return ERROR_CODE;
 }
 
 /*
@@ -436,18 +446,25 @@ int cidentify (char *name, int size)
  */
 int ccreate(void *(*start)(void *), void *arg, int prio)
 {
+    PRINT((">> CCREATE <<\n"));
     init();
 
-    TCB_t *newThread = (TCB_t *)malloc(sizeof(TCB_t));
+    PRINT(("Allocating space\n"));
+    TCB_t *newThread = (TCB_t *) malloc(sizeof(TCB_t));
 
+    PRINT(("Setting variables\n"));
     newThread->tid = generateThreadId();
     newThread->tidBlocked = 0;
     newThread->state = PROCST_APTO;
     newThread->prio = prio;
 
+    PRINT(("getcontext\n"));
     getcontext(&(newThread->context));
 
+    PRINT(("link\n"));
     newThread->context.uc_link = finisherContext;
+
+    PRINT(("stack\n"));
     newThread->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
     newThread->context.uc_stack.ss_size = SIGSTKSZ;
 
@@ -455,7 +472,11 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
         return ERROR_CODE;
     }
 
+    PRINT(("makecontext\n"));
     makecontext(&(newThread->context), (void (*)(void))start, 1, arg);
+
+    //@todo remove the following line:
+    AppendFila2(ready, newThread);
 
     EnqueueThreadInFila2(newThread, ready);
 
