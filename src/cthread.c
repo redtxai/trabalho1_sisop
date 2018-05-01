@@ -39,18 +39,17 @@ int generateThreadId()
 /*
  * PrintFila2: Printa todas os ids de uma fila qualquer
  */
-void PrintFila2(FILA2 *fila)
+void PrintFila2(FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
+    PRINT(("Printing FILA2: "));
     FirstFila2(fila);
-
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL)
             PRINT(("%d ",thread->tid));
     } while (NextFila2(fila) == 0);
-
     PRINT(("\n"));
 }
 
@@ -70,7 +69,6 @@ TCB_t *GetThreadWaitingFromFila2(int tidBlocked, FILA2 *fila)
     TCB_t *thread = NULL;
 
     FirstFila2(fila);
-
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tidBlocked == tidBlocked)
@@ -91,18 +89,25 @@ TCB_t *GetThreadWaitingFromFila2(int tidBlocked, FILA2 *fila)
  *  Retorna um ponteiro para thread quando encontrá-la na fila.
  *  Quando não encontrar, retorna NULL;
  */
-TCB_t *GetThreadFromFila2(int tid, FILA2 *fila)
+TCB_t *GetThreadFromFila2(int tid, FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    FirstFila2(fila);
+    PRINT(("Finding thread from FILA2\n"));
+    if(FirstFila2(fila) != 0) {
+        PRINT(("Thread not found!\n"));
+        return NULL;
+    }
 
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
-        if (thread != NULL && thread->tid == tid)
+        if (thread != NULL && thread->tid == tid) {
+            PRINT(("Found thread!\n"));
             return thread;
+        }
     } while (NextFila2(fila) == 0);
 
+    PRINT(("ERROR: Undefined\n"));
     return NULL;
 }
 
@@ -117,23 +122,30 @@ TCB_t *GetThreadFromFila2(int tid, FILA2 *fila)
  *  Retorna SUCCESS_CODE caso tenha encontrado e removido a thread com sucesso.
  *  Caso contrário, retorna ERROR_CODE.
  */
-int RemoveThreadFromFila2(int tid, FILA2 *fila)
+int RemoveThreadFromFila2(int tid, FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    if(FirstFila2(fila) != 0)
+    PRINT(("Removing thread from FILA2\n"));
+    if(FirstFila2(fila) != 0) {
+        PRINT(("ERROR: Thread not found!\n"));
         return ERROR_CODE;
+    }
 
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tid == tid) {
-            if(DeleteAtIteratorFila2(fila) == 0)
+            if(DeleteAtIteratorFila2(fila) == 0) {
                 return SUCCESS_CODE;
-            else
+            }
+            else {
+                PRINT(("ERROR when deleting!\n"));
                 return ERROR_CODE;
+            }
         }
     } while(NextFila2(fila) == 0);
 
+    PRINT(("ERROR: Undefined\n"));
     return ERROR_CODE;
 }
 
@@ -146,17 +158,25 @@ int RemoveThreadFromFila2(int tid, FILA2 *fila)
  *
  * Retorno:
  *  Retorna um ponteiro para thread quando executada corretamente.
- *  Caso a fila esteja vazia ou com erro retorna NULL (@todo verificar quando der erros)
+ *  Caso a fila esteja vazia ou com erro retorna NULL
  */
-TCB_t *DequeueThreadInFila2(FILA2 *fila)
+TCB_t *DequeueThreadInFila2(FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    FirstFila2(fila);
-    thread = (TCB_t *)GetAtIteratorFila2(fila);
-    DeleteAtIteratorFila2(fila);
+    PRINT(("Dequeing thread from FILA2\n"));
 
-    return thread;
+    if(FirstFila2(fila) != 0) {
+        PRINT(("ERROR: FILA2 is empty!\n"));
+        return NULL;
+    }
+    thread = (TCB_t *)GetAtIteratorFila2(fila);
+    if(DeleteAtIteratorFila2(fila) == 0) {
+        PRINT(("Success\n"));
+        return thread;
+    }
+
+    return NULL;
 }
 
 /*
@@ -171,12 +191,11 @@ TCB_t *DequeueThreadInFila2(FILA2 *fila)
  *  Retorna SUCCESS_CODE quando executada corretamente.
  *  Caso contrário, retorna ERROR_CODE.
  */
-int EnqueueThreadInFila2(TCB_t *thread, FILA2 *fila)
+int EnqueueThreadInFila2(TCB_t *thread, FILA2 **fila)
 {
     PRINT(("Enqueing thread in FILA2\n"));
-    PRINT(("%p\n",fila));
     if(AppendFila2(fila, thread) == 0) {
-        PRINT(("Sucess\n"));
+        PRINT(("Success\n"));
         return SUCCESS_CODE;
     }
     else {
@@ -282,10 +301,7 @@ void onEndThread()
 int initFila(FILA2 *fila)
 {
     PRINT(("Initializing queues\n"));
-
-    PRINT(("%p\n",fila));
-    fila = (FILA2 *) malloc(sizeof(FILA2));
-    PRINT(("%p\n",fila));
+    fila = (FILA2 *)malloc(sizeof(FILA2));
 
     if (CreateFila2(fila) == 0) {
         PRINT(("Success\n"));
