@@ -36,6 +36,21 @@ int generateThreadId()
     return nextUniqueThreadId++;
 }
 
+void PrintFila2(FILA2 *fila)
+{
+    TCB_t *thread = NULL;
+
+    FirstFila2(fila);
+
+    do {
+        thread = (TCB_t *)GetAtIteratorFila2(fila);
+        if (thread != NULL)
+            PRINT(("%d ",thread->tid));
+    } while (NextFila2(fila) == 0);
+
+    PRINT(("\n"));
+}
+
 /*
  * GetThreadWaitingFromFila2: Busca por uma thread numa fila que está esperando por outra e retorna seu valor
  *
@@ -261,9 +276,10 @@ int initFila(FILA2 *fila)
     fila = (FILA2 *) malloc(sizeof(FILA2));
 
     if (CreateFila2(fila) != 0) {
-	PRINT(("Error\n"));
+    PRINT(("Error\n"));
         return ERROR_CODE;
     }
+    PrintFila2(fila);
     return SUCCESS_CODE;
 }
 
