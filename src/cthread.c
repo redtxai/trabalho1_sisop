@@ -180,7 +180,7 @@ int makeReady(int tid) {
 int swapContext(int nextState)
 {
     if (runningThread != NULL) {
-        switch(runningThread->state) {
+        switch(nextState) {
             case PROCST_BLOQ:
                 EnqueueThreadInFila2(runningThread, blocked);
                 break;
@@ -419,8 +419,8 @@ int cyield(void)
 {
     init();
 
-    runningThread->state = PROCST_APTO;
-    EnqueueThreadInFila2(runningThread, ready);
+    //runningThread->state = PROCST_APTO;
+    //EnqueueThreadInFila2(runningThread, ready);
 
     return swapContext(PROCST_APTO);
 }
@@ -444,6 +444,7 @@ int cresume(int tid)
 
     thread = GetThreadFromFila2(tid, blockedSuspended);
     if(thread != NULL) {
+        thread->state = PROCST_BLOQ;
         RemoveThreadFromFila2(tid, blockedSuspended);
         EnqueueThreadInFila2(thread, blocked);
         return SUCCESS_CODE;
@@ -451,6 +452,7 @@ int cresume(int tid)
 
     thread = GetThreadFromFila2(tid, readySuspended);
     if(thread != NULL) {
+        thread->state = PROCST_APTO;
         RemoveThreadFromFila2(tid, readySuspended);
         EnqueueThreadInFila2(thread, ready);
         return SUCCESS_CODE;
@@ -478,6 +480,7 @@ int csuspend(int tid)
 
     thread = GetThreadFromFila2(tid, blocked);
     if(thread != NULL) {
+        thread->state = PROCST_BLOQ_SUS;
         RemoveThreadFromFila2(tid, blocked);
         EnqueueThreadInFila2(thread, blockedSuspended);
         return SUCCESS_CODE;
@@ -485,6 +488,7 @@ int csuspend(int tid)
 
     thread = GetThreadFromFila2(tid, ready);
     if(thread != NULL) {
+        thread->state = PROCST_APTO_SUS;
         RemoveThreadFromFila2(tid, ready);
         EnqueueThreadInFila2(thread, readySuspended);
         return SUCCESS_CODE;
