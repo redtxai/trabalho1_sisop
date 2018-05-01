@@ -35,6 +35,32 @@ int generateThreadId()
 }
 
 /*
+ * GetThreadWaitingFromFila2: Busca por uma thread numa fila que está esperando por outra e retorna seu valor
+ *
+ * Parâmetros:
+ *  tidBlocked: id da thread que está sendo aguardado o término
+ *  pFila: ponteiro para uma FILA2 qualquer
+ *
+ * Retorno:
+ *  Retorna um ponteiro para thread quando encontrá-la na fila.
+ *  Quando não encontrar, retorna NULL;
+ */
+TCB_t *GetThreadWaitingFromFila2(int tidBlocked, FILA2 *fila)
+{
+    TCB_t *thread = NULL;
+
+    FirstFila2(fila);
+
+    do {
+        thread = (TCB_t *)GetAtIteratorFila2(fila);
+        if (thread != NULL && thread->tidBlocked == tidBlocked)
+            return thread;
+    } while (NextFila2(fila) == 0);
+
+    return NULL;
+}
+
+/*
  * GetThreadFromFila2: Busca por uma thread numa fila e retorna seu valor
  *
  * Parâmetros:
@@ -388,6 +414,7 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
     TCB_t *newThread = (TCB_t *)malloc(sizeof(TCB_t));
 
     newThread->tid = generateThreadId();
+    newThread->tidBlocked = 0;
     newThread->state = PROCST_APTO;
     newThread->prio = prio;
 
@@ -498,7 +525,8 @@ int csuspend(int tid)
 }
 
 /*
- * cjoin: @todo escrever sobre a função
+ * cjoin: Bloqueia a runningThread até que a thread, que possui o id passado por parâmetro, termine.
+ *        Caso tid não existe ou outra thread esteja esperando por esse tid já, retorna ERROR_CODE.
  *
  * Parâmetros:
  *  tid: identificador da thread cujo término está sendo aguardado.
@@ -509,7 +537,27 @@ int csuspend(int tid)
  */
 int cjoin(int tid)
 {
-    //@todo
+    init();
+    if(runningThread == NULL) {
+        return ERROR_CODE;
+    }
+
+    TCB_t *thread = NULL;
+    // verifica-se se a thread existe e não está finalizada
+    thread = 
+    if(GetThreadFromFila2(tid, blocked) != NULL
+        || GetThreadFromFila2(tid, blockedSuspended) != NULL
+        || GetThreadFromFila2(tid, ready) != NULL
+        || GetThreadFromFila2(tid, readySuspended) != NULL) {
+
+        // verifica-se se não há nenhuma outra thread esperando por essa thread
+        if (GetThreadWaitingFromFila2(tid, blocked) == NULL
+            && GetThreadWaitingFromFila2(tid, blockedSuspended) == NULL) {
+            runningThread->tidBlocked = tid;
+            return swapContext(PROCST_BLOQ);
+        }
+    }
+
     return ERROR_CODE;
 }
 
