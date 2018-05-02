@@ -348,7 +348,7 @@ int initReadyFila()
     return ERROR_CODE;
 }
 
-int initReadySuspendedFila(FILA2 *fila)
+int initReadySuspendedFila()
 {
     PRINT(("Initializing queues\n"));
     readySuspended = (FILA2 *)malloc(sizeof(FILA2));
@@ -360,7 +360,7 @@ int initReadySuspendedFila(FILA2 *fila)
     return ERROR_CODE;
 }
 
-int initBlockedFila(FILA2 *fila)
+int initBlockedFila()
 {
     PRINT(("Initializing queues\n"));
     blocked = (FILA2 *)malloc(sizeof(FILA2));
@@ -372,7 +372,7 @@ int initBlockedFila(FILA2 *fila)
     return ERROR_CODE;
 }
 
-int initBlockedSuspendedFila(FILA2 *fila)
+int initBlockedSuspendedFila()
 {
     PRINT(("Initializing queues\n"));
     blockedSuspended = (FILA2 *)malloc(sizeof(FILA2));
