@@ -300,7 +300,18 @@ int swapContext(int nextState)
 void onEndThread()
 {
     PRINT(("Thread ended\n"));
-    //@todo provavelmente tem mais coisas pra fazer aqui
+
+    TCB_t *thread = GetThreadWaitingFromFila2(runningThread->tid, &blocked);
+    if (thread != NULL) {
+        thread->tidBlocked = 0;
+        makeReady(thread->tid);
+    }
+
+    thread = GetThreadWaitingFromFila2(runningThread->tid, &blockedSuspended);
+    if (thread != NULL) {
+        thread->tidBlocked = 0;
+        makeReady(thread->tid);
+    }
     swapContext(PROCST_TERMINO);
 }
 
