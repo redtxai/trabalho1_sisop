@@ -534,9 +534,6 @@ int cyield(void)
 
     PRINT(("Cyield\n"));
 
-    //runningThread->state = PROCST_APTO;
-    //EnqueueThreadInFila2(runningThread, ready);
-
     return swapContext(PROCST_APTO);
 }
 
@@ -680,10 +677,12 @@ int csem_init(csem_t *sem, int count)
     sem->fila = (FILA2 *) malloc(sizeof(FILA2));
     sem->count = count;
 
-    CreateFila2(sem->fila);
-
-    if (sem->fila != 0)
+    if(CreateFila2(sem->fila) == 0); {
+        PRINT(("Semaphor initialized succesfully\n"));
         return SUCCESS_CODE;
+    }
+
+    PRINT(("Error initializing semaphor\n"));
     return ERROR_CODE;
 }
 
@@ -706,20 +705,21 @@ int cwait(csem_t *sem)
     PRINT(("Cwait\n"));
 
     // Semáforo nulo ou fila não inicializada retornam erro.
-    if ((sem == NULL) || (sem->fila == NULL))
+    if ((sem == NULL) || (sem->fila == NULL)) {
         return ERROR_CODE;
-    // Recurso disponível é passado para a thread.
-    if (sem->count > 0) {
-        sem->count--;
     }
-    // recurso sendo utilizado. Colocar em estado bloqueado e na fila do semáforo.
+
+    sem->count--;
+
+    if (sem->count >= 0) {
+        PRINT(("Resource still available. Continue execution.\n"));
+    }
+    // Recurso esgotado: colocar em estado bloqueado e na fila do semáforo.
     else {
-        sem->count--;
-        //runningThread->state = PROCST_BLOQ;
+        PRINT(("Resource depleted. Moving to blocked state.\n"));
         //AppendFila2(sem->fila, runningThread);
         EnqueueThreadInFila2(runningThread, sem->fila);
         swapContext(PROCST_BLOQ); // verificar funcionamento.
-
     }
     return SUCCESS_CODE;
 }
