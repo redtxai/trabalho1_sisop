@@ -5,10 +5,13 @@
 CC=gcc
 LIB_DIR=../lib
 
-all: exemplo
+all: exemplo suspend
 
 exemplo: exemplo.c $(LIB_DIR)/libcthread.a
 	$(CC) -o exemplo exemplo.c -L$(LIB_DIR) -lcthread -Wall
+
+suspend: suspend.c $(LIB_DIR)/libcthread.a
+	$(CC) -o suspend suspend.c -L$(LIB_DIR) -lcthread -Wall
 
 mandel: mandel.c $(LIB_DIR)/libcthread.a
 	$(CC) -o mandel mandel.c -L$(LIB_DIR) -lcthread -Wall
