@@ -5,7 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
+//Debug level 1
 #define PRINT(X) printf X
+//Debug level 2
+#define PRINT2(X) // printf X
 
 #define ERROR_CODE -1
 #define SUCCESS_CODE 0
@@ -64,17 +67,25 @@ void PrintFila2(FILA2 **fila)
  *  Retorna um ponteiro para thread quando encontrá-la na fila.
  *  Quando não encontrar, retorna NULL;
  */
-TCB_t *GetThreadWaitingFromFila2(int tidBlocked, FILA2 *fila)
+TCB_t *GetThreadWaitingFromFila2(int tidBlocked, FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    FirstFila2(fila);
+    PRINT2(("Finding thread from FILA2\n"));
+    if(FirstFila2(fila) != 0) {
+        PRINT2(("FILA2 is empty!\n"));
+        return NULL;
+    }
+
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
-        if (thread != NULL && thread->tidBlocked == tidBlocked)
+        if (thread != NULL && thread->tidBlocked == tidBlocked) {
+            PRINT2(("Found thread!\n"));
             return thread;
+        }
     } while (NextFila2(fila) == 0);
 
+    PRINT2(("Thread not found!\n"));
     return NULL;
 }
 
@@ -93,21 +104,21 @@ TCB_t *GetThreadFromFila2(int tid, FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    PRINT(("Finding thread from FILA2\n"));
+    PRINT2(("Finding thread from FILA2\n"));
     if(FirstFila2(fila) != 0) {
-        PRINT(("Thread not found!\n"));
+        PRINT2(("FILA2 is empty!\n"));
         return NULL;
     }
 
     do {
         thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tid == tid) {
-            PRINT(("Found thread!\n"));
+            PRINT2(("Found thread!\n"));
             return thread;
         }
     } while (NextFila2(fila) == 0);
 
-    PRINT(("ERROR: Undefined\n"));
+    PRINT2(("Thread not found!\n"));
     return NULL;
 }
 
@@ -126,9 +137,9 @@ int RemoveThreadFromFila2(int tid, FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    PRINT(("Removing thread from FILA2\n"));
+    PRINT2(("Removing thread from FILA2\n"));
     if(FirstFila2(fila) != 0) {
-        PRINT(("ERROR: Thread not found!\n"));
+        PRINT2(("ERROR: Thread not found!\n"));
         return ERROR_CODE;
     }
 
@@ -136,16 +147,17 @@ int RemoveThreadFromFila2(int tid, FILA2 **fila)
         thread = (TCB_t *)GetAtIteratorFila2(fila);
         if (thread != NULL && thread->tid == tid) {
             if(DeleteAtIteratorFila2(fila) == 0) {
+                PRINT2(("Success!\n"));
                 return SUCCESS_CODE;
             }
             else {
-                PRINT(("ERROR when deleting!\n"));
+                PRINT2(("ERROR when deleting!\n"));
                 return ERROR_CODE;
             }
         }
     } while(NextFila2(fila) == 0);
 
-    PRINT(("ERROR: Undefined\n"));
+    PRINT2(("ERROR: Undefined\n"));
     return ERROR_CODE;
 }
 
@@ -164,15 +176,15 @@ TCB_t *DequeueThreadInFila2(FILA2 **fila)
 {
     TCB_t *thread = NULL;
 
-    PRINT(("Dequeing thread from FILA2\n"));
+    PRINT2(("Dequeing thread from FILA2\n"));
 
     if(FirstFila2(fila) != 0) {
-        PRINT(("ERROR: FILA2 is empty!\n"));
+        PRINT2(("ERROR: FILA2 is empty!\n"));
         return NULL;
     }
     thread = (TCB_t *)GetAtIteratorFila2(fila);
     if(DeleteAtIteratorFila2(fila) == 0) {
-        PRINT(("Success\n"));
+        PRINT2(("Success\n"));
         return thread;
     }
 
@@ -193,13 +205,13 @@ TCB_t *DequeueThreadInFila2(FILA2 **fila)
  */
 int EnqueueThreadInFila2(TCB_t *thread, FILA2 **fila)
 {
-    PRINT(("Enqueing thread in FILA2\n"));
+    PRINT2(("Enqueing thread in FILA2\n"));
     if(AppendFila2(fila, thread) == 0) {
-        PRINT(("Success\n"));
+        PRINT2(("Success\n"));
         return SUCCESS_CODE;
     }
     else {
-        PRINT(("Error"));
+        PRINT2(("Error"));
         return ERROR_CODE;
     }
 }
@@ -250,6 +262,8 @@ int makeReady(int tid) {
  */
 int swapContext(int nextState)
 {
+    PRINT(("Swapping context\n"));
+
     if (runningThread != NULL) {
         switch(nextState) {
             case PROCST_BLOQ:
@@ -267,6 +281,7 @@ int swapContext(int nextState)
         getcontext(&(runningThread->context));
     }
 
+    PRINT2(("Setting context to next ready thread\n"));
     runningThread = DequeueThreadInFila2(&ready);
 
     if (runningThread == NULL) {
@@ -284,6 +299,7 @@ int swapContext(int nextState)
  */
 void onEndThread()
 {
+    PRINT(("Thread ended\n"));
     //@todo provavelmente tem mais coisas pra fazer aqui
     swapContext(PROCST_TERMINO);
 }
@@ -304,11 +320,9 @@ int initFila(FILA2 *fila)
     fila = (FILA2 *)malloc(sizeof(FILA2));
 
     if (CreateFila2(fila) == 0) {
-        PRINT(("Success\n"));
         return SUCCESS_CODE;
         
     }
-    PRINT(("Error\n"));
     return ERROR_CODE;
 }
 
@@ -343,7 +357,6 @@ int initMainThread()
     mainThread->state = PROCST_EXEC;
     runningThread = mainThread;
 
-    PRINT(("Success\n"));
     return SUCCESS_CODE;
 }
 
@@ -362,7 +375,6 @@ int initFinisherContext()
 
     // Inicialização de contexto ocorreu corretamente?
     if(getcontext(finisherContext) != 0) {
-        PRINT(("Error\n"));
         return ERROR_CODE;
     }
 
@@ -375,7 +387,6 @@ int initFinisherContext()
 
     makecontext(finisherContext, onEndThread, 0);
 
-    PRINT(("Success\n"));
     return SUCCESS_CODE;
 }
 
@@ -465,25 +476,21 @@ int cidentify (char *name, int size)
  */
 int ccreate(void *(*start)(void *), void *arg, int prio)
 {
-    PRINT((">> CCREATE <<\n"));
     init();
 
-    PRINT(("Allocating space\n"));
+    PRINT(("Ccreate\n"));
+
     TCB_t *newThread = (TCB_t *) malloc(sizeof(TCB_t));
 
-    PRINT(("Setting variables\n"));
     newThread->tid = generateThreadId();
     newThread->tidBlocked = 0;
     newThread->state = PROCST_APTO;
     newThread->prio = prio;
 
-    PRINT(("getcontext\n"));
     getcontext(&(newThread->context));
 
-    PRINT(("link\n"));
     newThread->context.uc_link = finisherContext;
 
-    PRINT(("stack\n"));
     newThread->context.uc_stack.ss_sp = malloc(SIGSTKSZ);
     newThread->context.uc_stack.ss_size = SIGSTKSZ;
 
@@ -491,7 +498,6 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
         return ERROR_CODE;
     }
 
-    PRINT(("makecontext\n"));
     makecontext(&(newThread->context), (void (*)(void))start, 1, arg);
 
     EnqueueThreadInFila2(newThread, &ready);
@@ -511,6 +517,8 @@ int ccreate(void *(*start)(void *), void *arg, int prio)
 int cyield(void)
 {
     init();
+
+    PRINT(("Cyield\n"));
 
     //runningThread->state = PROCST_APTO;
     //EnqueueThreadInFila2(runningThread, ready);
@@ -532,6 +540,8 @@ int cyield(void)
 int cresume(int tid)
 {
     init();
+
+    PRINT(("Cresume\n"));
 
     TCB_t *thread = NULL;
 
@@ -569,6 +579,8 @@ int csuspend(int tid)
 {
     init();
 
+    PRINT(("Csuspend\n"));
+
     TCB_t *thread = NULL;
 
     thread = GetThreadFromFila2(tid, &blocked);
@@ -604,6 +616,9 @@ int csuspend(int tid)
 int cjoin(int tid)
 {
     init();
+
+    PRINT(("Cjoin\n"));
+
     if(runningThread == NULL) {
         return ERROR_CODE;
     }
@@ -643,7 +658,9 @@ int cjoin(int tid)
  */
 int csem_init(csem_t *sem, int count)
 {
-    //init();
+    init();
+
+    PRINT(("Csem_init\n"));
 
     sem = (csem_t *) malloc(sizeof(csem_t));
     sem->fila = (FILA2 *) malloc(sizeof(FILA2));
@@ -671,6 +688,9 @@ int csem_init(csem_t *sem, int count)
 int cwait(csem_t *sem)
 {
     init();
+
+    PRINT(("Cwait\n"));
+
     // Semáforo nulo ou fila não inicializada retornam erro.
     if ((sem == NULL) || (sem->fila == NULL))
         return ERROR_CODE;
@@ -703,6 +723,9 @@ int cwait(csem_t *sem)
 int csignal(csem_t *sem)
 {
     init();
+
+    PRINT(("Csignal\n"));
+
     // Semáforo nulo ou fila não inicializada retornam erro.
     if ((sem == NULL) || (sem->fila == NULL))
         return ERROR_CODE;
