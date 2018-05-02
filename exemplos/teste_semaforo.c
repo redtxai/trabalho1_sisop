@@ -11,14 +11,14 @@
 
 
 
-void *func(void *arg){
+void *func(void *arg)
 {
 	int i = 0;
-	printf("iniciando função %d \n");
+	printf("iniciando função\n");
   // criar função que demora para rodar.
 	for(i=0; i < 10000; i++){
 		if(i % 10000)
-			printf("Finalizando função %d \n", ((int *)arg));)
+			printf("Finalizando função \n");
 	}
 		
  
