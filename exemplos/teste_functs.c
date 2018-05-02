@@ -1,5 +1,5 @@
 /* 
- * test_ordenamento.c: recebe um inteiro, cria uma array de valores aleatorios com este inteiro e ordena através do bubble sort. O objetivo é testar inits, yelds e suspends durante a execução de funções demoradas e rápidas. A cada 100 ordenamentos a função libera intencionalmente seu recurso.
+ * test_functs: testa as primitivas ccreate, cyield, cjoin, cresume e ccreate.
  */
 
 #include	"../include/support.h"
@@ -11,20 +11,17 @@
 
 
 
-int vetor[MAX_SIZE];
-int  inc = 0;
-
-void *func(void *arg){
+void *func(void *arg)
 {
 	int i = 0;
-	printf("iniciando função %d \n);
+	printf("iniciando função\n");
   // criar função que demora para rodar.
 	for(i=0; i < 10000; i++){
 		if(i % 10000)
-			printf("Finalizando função %d \n", *((int *)arg))
+			printf("Finalizando função\n");
 	}
 		
- 
+ 	return 0;
 }
 
 
@@ -33,13 +30,13 @@ int main(int argc, char *argv[]) {
 	int id0, id1, id2, id3;
 	int i=0;
 	
-	id0 = ccreate(func0, (void *)&i, 0);
+	id0 = ccreate(func, (void *)&i, 0);
 	i++;
-	id1 = ccreate(func0, (void *)&i, 0);
+	id1 = ccreate(func, (void *)&i, 0);
 	i++;
-	id2 = ccreate(func0, (void *)&i, 0);
+	id2 = ccreate(func, (void *)&i, 0);
 	i++;
-	id3 = ccreate(func0, (void *)&i, 0);
+	id3 = ccreate(func, (void *)&i, 0);
 	
 	cyield(); // id0 cede sua vez.
 
@@ -48,7 +45,7 @@ int main(int argc, char *argv[]) {
 	csuspend(id3);  // id3 entra em estado suspenso.
 	cresume(id3); // tira id3 do estado suspenso.
 
-	
+	return 0;	
 
 }
 
