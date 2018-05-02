@@ -336,6 +336,54 @@ int initFila(FILA2 *fila)
     return ERROR_CODE;
 }
 
+int initReadyFila()
+{
+    PRINT(("Initializing queues\n"));
+    ready = (FILA2 *)malloc(sizeof(FILA2));
+
+    if (CreateFila2(ready) == 0) {
+        return SUCCESS_CODE;
+        
+    }
+    return ERROR_CODE;
+}
+
+int initReadySuspendedFila(FILA2 *fila)
+{
+    PRINT(("Initializing queues\n"));
+    readySuspended = (FILA2 *)malloc(sizeof(FILA2));
+
+    if (CreateFila2(readySuspended) == 0) {
+        return SUCCESS_CODE;
+        
+    }
+    return ERROR_CODE;
+}
+
+int initBlockedFila(FILA2 *fila)
+{
+    PRINT(("Initializing queues\n"));
+    blocked = (FILA2 *)malloc(sizeof(FILA2));
+
+    if (CreateFila2(blocked) == 0) {
+        return SUCCESS_CODE;
+        
+    }
+    return ERROR_CODE;
+}
+
+int initBlockedSuspendedFila(FILA2 *fila)
+{
+    PRINT(("Initializing queues\n"));
+    blockedSuspended = (FILA2 *)malloc(sizeof(FILA2));
+
+    if (CreateFila2(blockedSuspended) == 0) {
+        return SUCCESS_CODE;
+        
+    }
+    return ERROR_CODE;
+}
+
 /*
  * initMainThread: Inicializa a thread principal (main) e a coloca no estado
  * "executando"
@@ -412,10 +460,10 @@ int init()
     if (!isLibraryInitialized) {
         PRINT(("Initializing cthread\n"));
 
-        int initFilaReturns = initFila(ready);
-        initFilaReturns += initFila(blocked);
-        initFilaReturns += initFila(readySuspended);
-        initFilaReturns += initFila(blockedSuspended);
+        int initFilaReturns = initReadyFila();
+        initFilaReturns += initReadySuspendedFila();
+        initFilaReturns += initBlockedFila();
+        initFilaReturns += initBlockedSuspendedFila();
 
         if (initFilaReturns != SUCCESS_CODE*4) {
             return ERROR_CODE;
