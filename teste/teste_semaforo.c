@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	int i=0;
 
 	// inicializar struct do semáforo.
-	csem_t *recurso;
+	csem_t recurso;
 	
 	// começar a rodar funcoes demoradas
 	id0 = ccreate(func, (void *)&i, 0);
